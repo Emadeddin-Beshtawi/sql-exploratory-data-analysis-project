@@ -1,0 +1,37 @@
+# --- OS & editor junk ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VS Code workspace (we can add specific files later if needed)
+.vscode/
+.history/
+
+# Logs & temp
+logs/
+*.log
+tmp/
+temp/
+*.tmp
+
+# Backups & generated DB artifacts (do not commit DB files)
+*.bak
+*.trn
+*.mdf
+*.ldf
+*.ndf
+*.dacpac
+*.bacpac
+
+# Virtual envs / secrets
+.env
+*.env
+secrets/
+
+# Node / Python (not used, but safe)
+node_modules/
+__pycache__/
+*.pyc
+
+# Keep datasets under version control (DO NOT ignore datasets)
+# (Intentionally no ignore rules for datasets/)
