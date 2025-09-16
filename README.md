@@ -1,47 +1,69 @@
-# SQL Data Warehouse (Medallion) — Portfolio Project
+# SQL Data Warehouse (Medallion) — SQL Server
 
-> **Layers:** Bronze → Silver → Gold &nbsp;•&nbsp; **Engine:** Microsoft SQL Server &nbsp;•&nbsp; **Tools:** VS Code (SQL Server extension), Git Bash, and GitHub
+A compact, production-style data warehouse on **Microsoft SQL Server** using the **Medallion Architecture**:  
+**Bronze** (raw landing) → **Silver** (standardized) → **Gold** (business-ready star schema).
 
-This repository showcases a compact, production-style **Medallion Architecture** on SQL Server. Raw CSVs land in **Bronze**, are cleansed/standardized in **Silver**, and exposed as business-ready **Gold** models (star schema) for analytics. Every script is annotated line-by-line for clarity, and quality checks are included so reviewers can verify results quickly.
+---
 
-## Table of Contents
-- [Project Goals](#project-goals)
-- [Data & Naming Conventions](#data--naming-conventions)
-- [Repository Structure](#repository-structure)
-- [Gold (Star Schema) Surface](#gold-star-schema-surface)
-- [Notes & Decisions](#notes--decisions)
-- [License](#license)
+## Introduction
+This project consolidates CSV exports from **CRM** and **ERP** systems into a single SQL Server data warehouse.  
+Data lands raw in **Bronze**, is cleansed and normalized in **Silver**, and is exposed for analytics in **Gold** as **dimension** and **fact** views. The result is a clean surface for BI, EDA, and analytics projects.
 
-## Project Goals
-- Demonstrate a clean **Bronze → Silver → Gold** pipeline on Microsoft SQL Server.
-- Keep **DDL/ETL readable** with line-by-line annotations in every script.
-- Provide **verifiable checks** for Silver and Gold so reviewers can trust results.
-- Make it **portfolio-friendly**: tidy repo layout, meaningful commits, and a v0.1.0 tag.
-- Ensure **easy local reproduction** using the included CSV datasets and VS Code.
+**Stack:** SQL Server • VS Code (SQL Server extension) • Git Bash • GitHub
 
-## Data & Naming Conventions
+---
 
-**Style**
-- `snake_case`, English names, avoid SQL reserved words.
+## Scenario / Problem Statement
+- The organization has operational data spread across **CRM** and **ERP** files with inconsistent formats:
+  - Dates stored as integers (`yyyymmdd`)
+  - Encoded attributes (e.g., gender `M/F`, marital `S/M`, country codes)
+  - Product lineage encoded in keys
+  - Potential duplicates on natural keys
+- Goal: build a **reproducible** data warehouse that:
+  - Ingests raw files as-is
+  - **Cleans and standardizes** key attributes
+  - Derives consistent business columns
+  - Publishes a **star schema** for analytics and reporting
 
-**Schemas**
-- `bronze` (raw), `silver` (standardized), `gold` (business-ready/star).
+---
 
-**Tables / Views**
-- **Bronze & Silver:** `<source>_<entity>` (e.g., `crm_cust_info`, `erp_px_cat_g1v2`), mirroring source names.
-- **Gold:** `dim_*` for dimensions, `fact_*` for facts (e.g., `dim_customers`, `fact_sales`).
+## Datasets Used
+**CRM (source_crm/)**
+- `cust_info.csv` — customer master (IDs, names, gender, marital status, create date)
+- `prd_info.csv` — product master (ID, product key, name, cost, product line, effective dates)
+- `sales_details.csv` — order lines (order number, product key, customer id, dates, sales, qty, price)
 
-**Columns**
-- Prefer descriptive, `snake_case` column names.
-- **Surrogate keys (Gold dims):** `<entity>_key` (e.g., `customer_key`, `product_key`).
-- **Technical columns:** prefix with `dwh_` (e.g., `dwh_create_date` in Silver).
+**ERP (source_erp/)**
+- `CUST_AZ12.csv` — customer demographics (customer key, birthdate, gender)
+- `LOC_A101.csv` — customer location (customer key, country)
+- `PX_CAT_G1V2.csv` — product category metadata (category id, category, subcategory, maintenance flag)
 
-**Data Types (guidance)**
-- Keep raw types in Bronze; normalize in Silver (e.g., INT `yyyymmdd` → `DATE`).
-- Monetary fields may remain `INT` in Silver and be promoted to `DECIMAL(18,2)` in Gold if needed.
+> Files reside in the repository under `datasets/source_crm` and `datasets/source_erp`.
 
-**Stored Procedures**
-- Loading procs follow `load_<layer>` (e.g., `bronze.load_bronze`, `silver.load_silver`).
+---
+
+## Objectives
+- **Modeling & Conventions**
+  - Create `DataWarehouse` with schemas: `bronze`, `silver`, `gold`
+  - Apply consistent **snake_case** naming and reserved-word hygiene
+- **ETL (Skills Demonstrated)**
+  - **Extract/Load:** `BULK INSERT` raw CSVs → **Bronze** with fast, idempotent loads (e.g., `TABLOCK`)
+  - **Transform (Silver):**
+    - Convert INT dates → `DATE`
+    - Normalize **gender**, **marital_status**, and **country** values
+    - Derive `cat_id` from `prd_key`; compute effective dating via `LEAD(...)-1`
+    - De-duplicate customers by most recent `cst_create_date`
+    - Add `dwh_create_date` audit column
+  - **Publish (Gold):**
+    - Views: `gold.dim_customers`, `gold.dim_products`, `gold.fact_sales`
+    - Star-schema joins via natural/business keys mapped to view surrogate keys
+- **Quality & Verification**
+  - Silver checks: keys/whitespace/domains/date rules/math consistency
+  - Gold checks: surrogate-key uniqueness and referential integrity (no null FKs)
+- **Reproducibility**
+  - Self-contained datasets, scripts, and clear repository structure
+
+---
 
 ## Repository Structure
 
@@ -57,43 +79,46 @@ sql-data-warehouse-project/
 │     ├─ LOC_A101.csv
 │     └─ PX_CAT_G1V2.csv
 ├─ scripts/
-│  ├─ init_database.sql
+│  ├─ init_database.sql                 # Create DB + bronze/silver/gold schemas (destructive in dev)
 │  ├─ bronze/
-│  │  ├─ ddl_bronze.sql
-│  │  └─ proc_load_bronze.sql
+│  │  ├─ ddl_bronze.sql                 # Raw landing tables
+│  │  └─ proc_load_bronze.sql           # BULK INSERT from datasets → Bronze
 │  ├─ silver/
-│  │  ├─ ddl_silver.sql
-│  │  └─ proc_load_silver.sql
+│  │  ├─ ddl_silver.sql                 # Standardized tables + audit column
+│  │  └─ proc_load_silver.sql           # Bronze → Silver transforms
 │  └─ gold/
-│     └─ ddl_gold.sql
+│     └─ ddl_gold.sql                   # Gold views (dim_customers, dim_products, fact_sales)
 ├─ tests/
-│  ├─ quality_checks_silver.sql
-│  └─ quality_checks_gold.sql
+│  ├─ quality_checks_silver.sql         # Keys/domains/date rules/math checks
+│  └─ quality_checks_gold.sql           # Surrogate uniqueness & join integrity
 ├─ .gitignore
 ├─ LICENSE
-└─ README.md 
+└─ README.md
 ```
-## Gold (Star Schema) Surface
 
-**Dimensions**
-- `gold.dim_customers`  
-  `(customer_key, customer_id, customer_number, first_name, last_name, country, marital_status, gender, birthdate, create_date)`
-- `gold.dim_products`  
-  `(product_key, product_id, product_number, product_name, category_id, category, subcategory, maintenance, cost, product_line, start_date)`
+---
 
-**Fact**
-- `gold.fact_sales`  
-  `(order_number, product_key, customer_key, order_date, shipping_date, due_date, sales_amount, quantity, price)`
+## Conclusion
 
-## Notes & Decisions
-- **Medallion layers:** Bronze (raw CSV), Silver (standardized), Gold (business-ready views).
-- **Gold as views:** Surrogate keys use `ROW_NUMBER()` for demo speed; in production prefer materialized tables with `IDENTITY` keys.
-- **Data types:** Monetary values remain `INT` in Bronze/Silver; can be promoted to `DECIMAL(18,2)` in Gold if required.
-- **Customer de-dup:** Silver keeps the most recent record per `cst_id` (ties broken by `cst_create_date`).
-- **Product lineage:** `cat_id` derived from `prd_key`; Gold filters to **current** products (`prd_end_dt IS NULL`).
-- **Audit column:** Silver tables include `dwh_create_date` for basic lineage.
-- **Tools:** VS Code (SQL Server extension), Git Bash, and GitHub.
+This build demonstrates end-to-end **ETL** on **SQL Server**:
 
-## License
-Released under the **MIT License** — see [LICENSE](LICENSE) for details.
+- Fast, repeatable ingest from CSV to Bronze
+
+- Robust transformations in Silver for clean, standardized datasets
+
+- Business-ready Gold star schema for analytics and reporting
+
+- Quality checks to validate correctness and trust
+
+---
+
+## Related Projects
+- **SQL Exploratory Data Analysis (EDA):** https://github.com/Emadeddin-Beshtawi/sql-exploratory-data-analysis-project
+- **SQL Data Analytics:** https://github.com/Emadeddin-Beshtawi/sql-data-analytics-project
+
+
+
+
+
+
 
