@@ -37,7 +37,7 @@ The underlying datasets are provided by the vendored **Data Warehouse**:
 - `LOC_A101.csv` — customer country
 - `PX_CAT_G1V2.csv` — product category metadata
 
-> These are available in this repo via `deps/data-warehouse/datasets/...`
+> These are available in this repo via `https://github.com/Emadeddin-Beshtawi/sql-data-warehouse-project`
 
 ---
 
@@ -47,7 +47,7 @@ The underlying datasets are provided by the vendored **Data Warehouse**:
 - Keep analysis modular: each script targets a specific theme
 - Showcase SQL-native exploration (no external notebooks needed)
 
-**ETL Skill Highlight (inherited from DW)**
+## ETL Skill Highlight (inherited from DW)
 - The warehouse performs **BULK INSERT** (Extract/Load) to **Bronze**
 - Cleansing & standardization in **Silver** (dates, gender/marital/country, product lineage, de-dupe)
 - Business-ready **Gold** (dimensions/fact) enabling robust EDA without re-cleaning
@@ -72,12 +72,6 @@ sql-exploratory-data-analysis-project/
 ```
 ---
 
-## Related Projects
-
-- SQL Data Warehouse (Medallion): https://github.com/Emadeddin-Beshtawi/sql-data-warehouse-project
-
-- SQL Data Analytics: https://github.com/Emadeddin-Beshtawi/sql-data-analytics-project
-
 ## Conclusion
 
 This **EDA** repo demonstrates SQL-only analysis on a clean warehouse surface:
@@ -89,3 +83,11 @@ This **EDA** repo demonstrates SQL-only analysis on a clean warehouse surface:
 - Produce quick top-N rankings and sanity checks
 
 The approach scales because ETL work is centralized in the DW; analysts focus on questions, not cleanup.
+
+---
+
+## Related Projects
+
+- SQL Data Warehouse (Medallion): https://github.com/Emadeddin-Beshtawi/sql-data-warehouse-project
+
+- SQL Data Analytics: https://github.com/Emadeddin-Beshtawi/sql-data-analytics-project
